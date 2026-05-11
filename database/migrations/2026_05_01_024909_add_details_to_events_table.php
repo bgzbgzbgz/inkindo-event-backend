@@ -10,7 +10,7 @@ return new class extends Migration
     {
         Schema::table('events', function (Blueprint $table) {
             // Relasi ke tabel kategori
-            // $table->foreignId('category_id')->nullable()->after('id')->constrained('event_categories')->nullOnDelete();
+            $table->foreignId('category_id')->nullable()->after('id')->constrained('event_categories')->nullOnDelete();
             
             // Detail event sesuai form "Rilis Event Baru"
             // $table->string('location')->nullable()->after('title'); // Lokasi / Titik Kumpul

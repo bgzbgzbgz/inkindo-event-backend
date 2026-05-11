@@ -4,6 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Models\Registration;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
+use SimpleSoftwareIO\QrCode\Facades\QrCode; // 1. Import QrCode
+use Illuminate\Support\Facades\Storage; // 2. Import Storage buat cek folder
 
 class RegistrationController extends Controller
 {
@@ -18,17 +21,36 @@ class RegistrationController extends Controller
         // Simpan file ke folder storage/app/public/payments
         $path = $request->file('payment_proof')->store('payments', 'public');
 
+        // Generate UUID untuk kode tiket (SATU KALI AJA)
+        $uuid = (string) Str::uuid();
+
+        // --- MULAI LOGIC BIKIN QR CODE ---
+        // Tentukan nama file
+        $qrFileName = 'qrcodes/' . $uuid . '.svg';
+
+        // 1. Generate gambar QR Code dalam bentuk raw string (SVG)
+        $qrContent = QrCode::format('svg')->size(300)->generate($uuid);
+
+        // 2. Simpan file pakai Storage bawaan Laravel
+        Storage::disk('public')->put($qrFileName, $qrContent);
+        // ---------------------------------
+
         $registration = Registration::create([
             'user_id' => auth()->id(), // Ngambil ID dari Token
             'event_id' => $request->event_id,
             'payment_proof' => $path,
-            'status' => 'pending'
+            'status' => 'pending',
+
+            // --- PAKE VARIABEL $uuid YANG UDAH DIBIKIN DI ATAS ---
+            'ticket_code' => $uuid, 
+            'ticket_type' => 'regular'
         ]);
 
         return response()->json([
             'success' => true,
-            'message' => 'Pendaftaran berhasil, tunggu verifikasi admin!',
-            'data' => $registration
+            'message' => 'Pendaftaran berhasil, QR Code sedang diproses!',
+            'data' => $registration, // <--- INI KOMA YANG TADI KETINGGALAN
+            'qr_url' => asset('storage/' . $qrFileName)
         ]);
     }
 
