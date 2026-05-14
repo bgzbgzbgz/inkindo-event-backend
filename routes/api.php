@@ -16,6 +16,7 @@ Route::post('/login', [AuthController::class, 'login']);
 Route::middleware('auth:sanctum')->group(function () {
     // Lu bisa tambahin rute buat 'Logout' atau 'Profile' di sini nanti
     Route::post('/events/register', [RegistrationController::class, 'store']);
+    Route::post('/events/scan-ticket', [RegistrationController::class, 'scanTicket']);
 
     // Rute Liat History Member
     Route::get('/history', [RegistrationController::class, 'history']);

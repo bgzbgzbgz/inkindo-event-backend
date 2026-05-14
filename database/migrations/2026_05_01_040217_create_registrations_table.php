@@ -16,6 +16,13 @@ return new class extends Migration
         $table->foreignId('user_id')->constrained()->onDelete('cascade');
         $table->foreignId('event_id')->constrained()->onDelete('cascade');
         $table->string('payment_proof')->nullable(); // Link foto bukti bayar
+
+        // --- TAMBAHAN UNTUK SISTEM TIKET & PRESENSI ---
+        $table->uuid('ticket_code')->unique()->nullable(); // Menyimpan kode unik QR
+        $table->enum('ticket_type', ['regular', 'vip'])->default('regular'); // Jenis undangan
+        $table->boolean('is_attended')->default(false); // Status kehadiran
+        // ----------------------------------------------
+
         $table->enum('status', ['pending', 'verified', 'rejected'])->default('pending');
         $table->timestamps();
     });

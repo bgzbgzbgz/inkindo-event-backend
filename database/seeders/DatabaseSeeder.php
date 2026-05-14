@@ -8,18 +8,30 @@ use Illuminate\Database\Seeder;
 
 class DatabaseSeeder extends Seeder
 {
-    use WithoutModelEvents;
-
-    /**
-     * Seed the application's database.
-     */
     public function run(): void
     {
-        // User::factory(10)->create();
+        // Memanggil Seeder lain agar ikut dijalankan
+    $this->call([
 
-        User::factory()->create([
-            'name' => 'Test User',
-            'email' => 'test@example.com',
+        EventSeeder::class,
+        ]);
+        // Bikin akun Admin Permanen
+        User::create([
+            'name' => 'Super Admin INKINDO',
+            'email' => 'admin@inkindo.org',
+            'password' => bcrypt('password'),
+            'role' => 'admin',
+            'status' => 'active',
+        ]);
+
+        // (Opsional) Bikin satu akun member biasa buat bahan testing
+        User::create([
+            'name' => 'Member Biasa',
+            'email' => 'member@gmail.com',
+            'password' => bcrypt('password'),
+            'role' => 'member',
+            'status' => 'active',
+            'nta' => 'NTA-123456'
         ]);
     }
 }
