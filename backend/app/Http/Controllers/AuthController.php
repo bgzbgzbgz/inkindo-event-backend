@@ -64,7 +64,17 @@ class AuthController extends Controller
             'success' => true,
             'message' => 'Berhasil Login!',
             'data'    => $user,
-            'token'   => $token // Token ini nanti disimpen FE buat akses menu lain
+            'token'   => $token 
+        ]);
+    }
+        public function logout(Request $request)
+    {
+        // Menghapus token user yang sedang login saat ini
+        $request->user()->currentAccessToken()->delete();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Logout berhasil'
         ]);
     }
 }

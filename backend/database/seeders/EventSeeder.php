@@ -23,6 +23,7 @@ class EventSeeder extends Seeder
             'event_date'  => '2026-05-15',
             'event_time'  => '08:00 - 15:00 WIB',
             'is_free'     => true,
+            'type'        => 'external',
             'price'       => null,
             'description' => 'Seminar mendalam mengenai perkembangan teknologi konstruksi baja terkini.',
             'image_url'   => 'https://images.unsplash.com/photo-1540575467063-178a50c2df87'
@@ -35,6 +36,7 @@ class EventSeeder extends Seeder
             'event_date'  => '2026-05-22',
             'event_time'  => '09:00 - 16:00 WIB',
             'is_free'     => false,
+            'type'        => 'internal',
             'price'       => 500000,
             'description' => 'Workshop intensif untuk meningkatkan efisiensi manajemen proyek konsultan.',
             'image_url'   => 'https://images.unsplash.com/photo-1540575467063-178a50c2df87'
@@ -47,6 +49,7 @@ class EventSeeder extends Seeder
             'event_date'  => '2026-06-10',
             'event_time'  => '08:00 - SELESAI',
             'is_free'     => true,
+            'type'        => 'internal',
             'price'       => null,
             'description' => 'Musyawarah tahunan seluruh anggota INKINDO regional Jawa Timur.',
             'image_url'   => 'https://images.unsplash.com/photo-1540575467063-178a50c2df87'

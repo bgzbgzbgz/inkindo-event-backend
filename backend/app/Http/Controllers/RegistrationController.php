@@ -23,7 +23,6 @@ class RegistrationController extends Controller
         $user = auth()->user();
 
         // 1. CEK KTA (NTA) UNTUK EVENT INTERNAL
-        // Jika event ini internal, tapi user tidak punya NTA (KTA)
         if ($event->type === 'internal' && empty($user->nta)) {
             return response()->json([
                 'success' => false,
@@ -78,7 +77,7 @@ class RegistrationController extends Controller
     public function history()
     {
         // Tarik data pendaftaran milik user yang lagi login, sekalian bawa data event-nya
-        $registrations = Registration::with('event')
+        $registrations = Registration::with('event.category')
                             ->where('user_id', auth()->id())
                             ->latest()
                             ->get();
@@ -112,6 +111,16 @@ class RegistrationController extends Controller
             'success' => true,
             'message' => 'Status berhasil diubah, notifikasi email telah dikirim.',
             'data'    => $registration
+        ]);
+    }
+    public function index()
+    {
+        // Mengambil semua data pendaftaran beserta data user dan event-nya
+        $registrations = Registration::with(['user', 'event'])->get();
+
+        return response()->json([
+            'success' => true,
+            'data' => $registrations
         ]);
     }
     // === FUNGSI SCAN TIKET PRESENSI (UNTUK PANITIA) ===

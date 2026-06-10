@@ -17,7 +17,8 @@ return new class extends Migration
             // $table->date('event_date')->nullable()->after('location'); // Tanggal Pelaksanaan
             $table->string('event_time')->nullable()->after('event_date'); // Waktu (Zona WIB)
             $table->boolean('is_free')->default(true)->after('event_time'); // Gratis atau berbayar
-            $table->decimal('price', 15, 2)->nullable()->after('is_free'); // Harga tiket (kalau berbayar)
+            $table->string('type')->default('external')->after('is_free'); // internal atau external
+            $table->decimal('price', 15, 2)->nullable()->after('type'); // Harga tiket (kalau berbayar)
             $table->string('image_url')->nullable()->after('description'); // Visual Sampul URL/Path
         });
     }
