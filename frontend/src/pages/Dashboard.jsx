@@ -52,6 +52,14 @@ const EMPTY_EVENT_FORM = {
   end: '',
   loc: '',
   price: '',
+  desc: '',
+  agenda: [],
+  ad_image: null,
+  ad_image_path: '',
+  poster_file: null,
+  poster_file_path: '',
+  publish_status: 'published',
+  scheduled_publish_at: '',
 };
 
 const EMPTY_PARTICIPANT_FORM = {
@@ -268,7 +276,9 @@ const Dashboard = () => {
   const fetchAllData = async () => {
     try {
       // 1. Fetch Events
-      const eventsResponse = await axios.get(`${API_BASE_URL}/events`);
+      const eventsResponse = await axios.get(`${API_BASE_URL}/events`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
       let fetchedEvents = [];
       if (eventsResponse.data.success) {
         fetchedEvents = eventsResponse.data.data.map((ev) => ({
@@ -278,7 +288,15 @@ const Dashboard = () => {
           type: ev.type === 'internal' ? 'Internal' : 'Eksternal',
           date: ev.event_date,
           time: ev.event_time || '08:00 - Selesai',
-          reg: 0
+          reg: 0,
+          description: ev.description || '',
+          location: ev.location || '',
+          price: ev.price || '',
+          agenda: ev.agenda || [],
+          ad_image_path: ev.ad_image || '',
+          poster_file_path: ev.poster_file || '',
+          publish_status: ev.publish_status || 'published',
+          scheduled_publish_at: ev.scheduled_publish_at ? ev.scheduled_publish_at.replace(' ', 'T').substring(0, 16) : ''
         }));
       }
 
@@ -298,7 +316,7 @@ const Dashboard = () => {
           evName: reg.event?.title || 'Event INKINDO',
           evDate: reg.event?.event_date || '',
           status: reg.status === 'verified' ? 'Verified' : reg.status === 'rejected' ? 'Rejected' : 'Pending',
-          paymentProof: reg.payment_proof ? `http://localhost:8000/storage/${reg.payment_proof}` : null
+          paymentProof: reg.payment_proof ? `${API_BASE_URL.replace(/\/api$/, '')}/storage/${reg.payment_proof}` : null
         }));
         setPayments(mappedPayments);
 
@@ -419,8 +437,16 @@ const Dashboard = () => {
       date: eventItem.date || '',
       start: startVal,
       end: endVal,
-      loc: 'Gedung INKINDO JATIM',
-      price: '',
+      loc: eventItem.location || 'Gedung INKINDO JATIM',
+      price: eventItem.price || '',
+      desc: eventItem.description || '',
+      agenda: eventItem.agenda || [],
+      ad_image: null,
+      ad_image_path: eventItem.ad_image_path || '',
+      poster_file: null,
+      poster_file_path: eventItem.poster_file_path || '',
+      publish_status: eventItem.publish_status || 'published',
+      scheduled_publish_at: eventItem.scheduled_publish_at || ''
     });
     setEventModal({ open: true, editingId: eventItem.id });
   };
@@ -443,41 +469,62 @@ const Dashboard = () => {
 
     const time = eventForm.start && eventForm.end ? `${eventForm.start} - ${eventForm.end} WIB` : 'TBD';
     const typeLower = eventForm.type?.toLowerCase() === 'internal' ? 'internal' : 'external';
-    const isFree = !eventForm.price || Number(eventForm.price) === 0;
+    const isFree = !eventForm.price || Number(eventForm.price) === 0 || String(eventForm.price).toLowerCase() === 'gratis';
 
-    const payload = {
-      title: name,
-      description: name,
-      event_date: eventForm.date,
-      event_time: time,
-      location: eventForm.loc || 'Gedung INKINDO JATIM',
-      is_free: isFree,
-      price: isFree ? null : Number(eventForm.price),
-      type: typeLower
-    };
+    const formData = new FormData();
+    formData.append('title', name);
+    formData.append('description', eventForm.desc || name);
+    formData.append('event_date', eventForm.date);
+    formData.append('event_time', time);
+    formData.append('location', eventForm.loc || 'Gedung INKINDO JATIM');
+    formData.append('is_free', isFree ? 1 : 0);
+    formData.append('price', isFree ? 0 : Number(eventForm.price));
+    formData.append('type', typeLower);
+    formData.append('publish_status', eventForm.publish_status || 'published');
+    
+    if (eventForm.publish_status === 'scheduled' && eventForm.scheduled_publish_at) {
+      formData.append('scheduled_publish_at', eventForm.scheduled_publish_at);
+    }
+    
+    if (eventForm.ad_image) {
+      formData.append('ad_image', eventForm.ad_image);
+    }
+    
+    if (eventForm.poster_file) {
+      formData.append('poster_file', eventForm.poster_file);
+    }
+    
+    formData.append('agenda', JSON.stringify(eventForm.agenda || []));
 
     try {
+      let response;
       if (eventModal.editingId) {
-        const response = await axios.put(`${API_BASE_URL}/events/${eventModal.editingId}`, payload, {
-          headers: { Authorization: `Bearer ${token}` }
+        formData.append('_method', 'PUT');
+        response = await axios.post(`${API_BASE_URL}/events/${eventModal.editingId}`, formData, {
+          headers: { 
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'multipart/form-data'
+          }
         });
-        if (response.data.success) {
-          showToast('Event berhasil diperbarui', 'success');
-          fetchAllData();
-        }
       } else {
-        const response = await axios.post(`${API_BASE_URL}/events`, payload, {
-          headers: { Authorization: `Bearer ${token}` }
+        response = await axios.post(`${API_BASE_URL}/events`, formData, {
+          headers: { 
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'multipart/form-data'
+          }
         });
-        if (response.data.success) {
-          showToast('Event baru berhasil ditambahkan', 'success');
-          fetchAllData();
-        }
       }
-      closeEventModal();
+
+      if (response.data.success) {
+        showToast(eventModal.editingId ? 'Event berhasil diperbarui' : 'Event baru berhasil ditambahkan', 'success');
+        fetchAllData();
+        closeEventModal();
+      } else {
+        showToast('Gagal menyimpan event', 'error');
+      }
     } catch (error) {
       console.error(error);
-      showToast('Gagal menyimpan event', 'error');
+      showToast(error.response?.data?.message || 'Gagal menyimpan event', 'error');
     }
   };
 
@@ -643,6 +690,12 @@ const Dashboard = () => {
                       <span className={`type-badge type-${eventItem.type?.toLowerCase() || 'internal'}`}>
                         {eventItem.type || 'Internal'}
                       </span>
+                      {eventItem.publish_status === 'draft' && (
+                        <span className="type-badge" style={{ background: '#64748b', color: '#fff' }}>DRAFT</span>
+                      )}
+                      {eventItem.publish_status === 'scheduled' && (
+                        <span className="type-badge" style={{ background: '#f59e0b', color: '#fff' }}>TERJADWAL ({eventItem.scheduled_publish_at})</span>
+                      )}
                     </div>
                   </td>
                   <td>
@@ -972,7 +1025,7 @@ const Dashboard = () => {
 
       {eventModal.open && (
         <div className="overlay open" onClick={(event) => event.target === event.currentTarget && closeEventModal()}>
-          <div className="modal">
+          <div className="modal" style={{ maxHeight: '95vh', overflowY: 'auto' }}>
             <div className="modal-hd">
               <div className="modal-ttl">{eventModal.editingId ? 'Edit Event' : 'Buat Event Baru'}</div>
               <button className="btn-close-modal" onClick={closeEventModal}>x</button>
@@ -1023,6 +1076,122 @@ const Dashboard = () => {
               <label>Harga Tiket</label>
               <input value={eventForm.price} onChange={(event) => setEventForm({ ...eventForm, price: event.target.value })} placeholder="GRATIS atau Rp. 50.000" />
             </div>
+
+            <div className="form-fld">
+              <label>Deskripsi Detail Event</label>
+              <textarea 
+                value={eventForm.desc} 
+                onChange={(event) => setEventForm({ ...eventForm, desc: event.target.value })} 
+                placeholder="Masukkan deskripsi detail event"
+                style={{ width: '100%', minHeight: '60px', padding: '10px', borderRadius: '8px', border: '1px solid #ccc', outline: 'none', fontFamily: 'inherit', fontSize: '13px' }}
+              />
+            </div>
+
+            <div className="form-fld">
+              <label style={{ fontWeight: 700 }}>Agenda Rincian Event</label>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '6px' }}>
+                {(eventForm.agenda || []).map((item, index) => (
+                  <div key={index} style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                    <input 
+                      type="text" 
+                      value={item.time} 
+                      placeholder="08:00" 
+                      style={{ width: '80px', padding: '8px', borderRadius: '6px', border: '1px solid #ccc', fontSize: '12px' }}
+                      onChange={(e) => {
+                        const newAgenda = [...eventForm.agenda];
+                        newAgenda[index].time = e.target.value;
+                        setEventForm({ ...eventForm, agenda: newAgenda });
+                      }}
+                    />
+                    <input 
+                      type="text" 
+                      value={item.title} 
+                      placeholder="Kegiatan" 
+                      style={{ flex: 1, padding: '8px', borderRadius: '6px', border: '1px solid #ccc', fontSize: '12px' }}
+                      onChange={(e) => {
+                        const newAgenda = [...eventForm.agenda];
+                        newAgenda[index].title = e.target.value;
+                        setEventForm({ ...eventForm, agenda: newAgenda });
+                      }}
+                    />
+                    <button 
+                      type="button" 
+                      style={{ padding: '6px 12px', background: '#ef4444', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '12px' }}
+                      onClick={() => {
+                        const newAgenda = eventForm.agenda.filter((_, i) => i !== index);
+                        setEventForm({ ...eventForm, agenda: newAgenda });
+                      }}
+                    >
+                      Hapus
+                    </button>
+                  </div>
+                ))}
+                <button 
+                  type="button" 
+                  style={{ alignSelf: 'flex-start', padding: '6px 12px', background: '#10b981', color: '#fff', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 600, fontSize: '12px' }}
+                  onClick={() => setEventForm({ ...eventForm, agenda: [...(eventForm.agenda || []), { time: '', title: '' }] })}
+                >
+                  + Tambah Agenda Row
+                </button>
+              </div>
+            </div>
+
+            <div className="form-fld">
+              <label>Gambar Iklan Banner Event (Saran ukuran: 1200x630 px)</label>
+              <input 
+                type="file" 
+                accept="image/*" 
+                onChange={(e) => setEventForm({ ...eventForm, ad_image: e.target.files[0] })} 
+                style={{ padding: '6px', border: '1px solid #ccc', borderRadius: '8px', width: '100%', fontSize: '12px' }}
+              />
+              {eventForm.ad_image_path && (
+                <div style={{ fontSize: '11px', color: '#64748b', marginTop: '4px' }}>
+                  File saat ini: <a href={`${API_BASE_URL.replace(/\/api$/, '')}/storage/${eventForm.ad_image_path}`} target="_blank" rel="noreferrer">Lihat Banner</a>
+                </div>
+              )}
+            </div>
+
+            <div className="form-fld">
+              <label>Poster Event Detail (Gambar / PDF)</label>
+              <input 
+                type="file" 
+                accept="image/*,application/pdf" 
+                onChange={(e) => setEventForm({ ...eventForm, poster_file: e.target.files[0] })} 
+                style={{ padding: '6px', border: '1px solid #ccc', borderRadius: '8px', width: '100%', fontSize: '12px' }}
+              />
+              {eventForm.poster_file_path && (
+                <div style={{ fontSize: '11px', color: '#64748b', marginTop: '4px' }}>
+                  File saat ini: <a href={`${API_BASE_URL.replace(/\/api$/, '')}/storage/${eventForm.poster_file_path}`} target="_blank" rel="noreferrer">Lihat Poster</a>
+                </div>
+              )}
+            </div>
+
+            <div className="form-row2">
+              <div className="form-fld">
+                <label>Status Publikasi</label>
+                <select 
+                  value={eventForm.publish_status} 
+                  onChange={(e) => setEventForm({ ...eventForm, publish_status: e.target.value })}
+                  style={{ padding: '10px', borderRadius: '8px', border: '1px solid #ccc', fontSize: '12px' }}
+                >
+                  <option value="published">Langsung Publikasikan (Publish)</option>
+                  <option value="draft">Simpan Sebagai Draft</option>
+                  <option value="scheduled">Jadwalkan Posting</option>
+                </select>
+              </div>
+              {eventForm.publish_status === 'scheduled' && (
+                <div className="form-fld">
+                  <label>Tanggal &amp; Waktu Publikasi</label>
+                  <input 
+                    type="datetime-local" 
+                    value={eventForm.scheduled_publish_at} 
+                    onChange={(e) => setEventForm({ ...eventForm, scheduled_publish_at: e.target.value })} 
+                    style={{ padding: '8px 10px', borderRadius: '8px', border: '1px solid #ccc', fontSize: '12px' }}
+                  />
+                </div>
+              )}
+            </div>
+
             <div className="modal-actions">
               <button className="btn-mcancel" onClick={closeEventModal}>Batal</button>
               <button className="btn-mconfirm" onClick={saveEvent}>Simpan Event</button>

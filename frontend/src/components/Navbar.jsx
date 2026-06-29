@@ -99,7 +99,7 @@ const Navbar = () => {
     }
     if (!registerForm.phone.trim()) {
       errors.phone = 'Nomor telepon harus diisi';
-    } else if (!/^\d+$/.test(registerForm.phone)) {
+    } else if (!/^[+\d\s-]+$/.test(registerForm.phone)) {
       errors.phone = 'Nomor telepon hanya boleh angka';
     }
     if (!registerForm.password.trim()) {
@@ -232,7 +232,7 @@ const Navbar = () => {
         {/* Logo */}
         <a className="nav-logo" href="#">
           <img
-            src="logoinkindo.png"
+            src={`${import.meta.env.BASE_URL || '/'}logoinkindo.png`}
             alt="Logo"
             className="nav-logo-img"
             onError={(e) => (e.target.style.display = 'none')}
@@ -433,6 +433,13 @@ const Navbar = () => {
       {isAuthModalOpen && (
         <div className="auth-overlay" onClick={overlayClose}>
           <div className="auth-box">
+            <button className="auth-close" onClick={closeAuthModal}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.8" strokeLinecap="round">
+                <line x1="18" y1="6" x2="6" y2="18" />
+                <line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
+            </button>
+
             <div className="auth-left">
               <img src="logoinkindo.png" alt="INKINDO" className="auth-left-logo-img" />
               <div className="auth-left-title">INKINDO<br />JATIM</div>
@@ -443,13 +450,6 @@ const Navbar = () => {
             </div>
 
             <div className="auth-right">
-              <button className="auth-close" onClick={closeAuthModal}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.8" strokeLinecap="round">
-                  <line x1="18" y1="6" x2="6" y2="18" />
-                  <line x1="6" y1="6" x2="18" y2="18" />
-                </svg>
-              </button>
-
               {authMode === 'login' ? (
                 <>
                   <h2 className="auth-title">Masuk ke Akun</h2>

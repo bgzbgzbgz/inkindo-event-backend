@@ -269,7 +269,7 @@ const DashboardUser = () => {
               ticketTitle: ev?.title ? ev.title.split(' ').slice(0, 3).join(' ').toUpperCase() : 'TIKET',
               ticketCategory: reg.ticket_type === 'vip' ? 'VIP' : 'Peserta',
               venue: ev?.location || 'Surabaya',
-              qrUrl: reg.ticket_code ? `http://localhost:8000/storage/qrcodes/${reg.ticket_code}.svg` : null
+              qrUrl: reg.ticket_code ? `${API_BASE_URL.replace(/\/api$/, '')}/storage/qrcodes/${reg.ticket_code}.svg` : null
             };
           });
           setMyEvents(mapped);
@@ -528,7 +528,7 @@ const DashboardUser = () => {
     <div className="user-dashboard">
       <header className="user-topbar">
         <button type="button" className="user-logo" onClick={() => navigate('/')}>
-          <img src="/logoinkindo.png" alt="INKINDO Jawa Timur" />
+          <img src={`${import.meta.env.BASE_URL || '/'}logoinkindo.png`} alt="INKINDO Jawa Timur" />
           <span>
             <strong>INKINDO JAWA TIMUR</strong>
             <small>Event Hub</small>
@@ -553,7 +553,7 @@ const DashboardUser = () => {
         <div className="user-topactions">
           <button type="button" className="user-dashboard-pill">
             <Icon name="user" size={15} />
-            Dashboard
+            <span className="user-pill-text">Dashboard</span>
           </button>
           <button type="button" className="user-logout" onClick={handleLogout} aria-label="Keluar">
             <Icon name="logout" size={16} />

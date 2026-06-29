@@ -12,6 +12,11 @@ class Event extends Model
     // Biar semua kolom bisa diisi langsung
     protected $guarded = ['id'];
 
+    protected $casts = [
+        'agenda' => 'array',
+        'is_free' => 'boolean',
+    ];
+
     // Bikin relasi ke tabel event_categories
     public function category()
     {

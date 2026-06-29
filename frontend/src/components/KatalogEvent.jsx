@@ -14,6 +14,7 @@ const KatalogEvent = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isRegisterOpen, setIsRegisterOpen] = useState(false);
   const [isSuccessOpen, setIsSuccessOpen] = useState(false);
+  const [regStatus, setRegStatus] = useState('verified');
   const [registerForm, setRegisterForm] = useState({
     name: '',
     email: '',
@@ -85,23 +86,28 @@ const KatalogEvent = () => {
       date: backendEvent.event_date,
       city: city,
       price: formattedPrice,
-      img: backendEvent.image_url || 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=500&q=80',
+      img: backendEvent.ad_image 
+        ? `${API_BASE_URL.replace(/\/api$/, '')}/storage/${backendEvent.ad_image}` 
+        : backendEvent.image_url || 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=500&q=80',
       time: backendEvent.event_time || '08:00 - Selesai',
       cert: 'Tersedia',
       desc: backendEvent.description || 'Deskripsi kegiatan.',
-      agenda: [
-        { time: '08:00', title: 'Registrasi Peserta' },
-        { time: '09:00', title: 'Sesi Utama' },
-        { time: '12:00', title: 'Makan Siang' },
-        { time: '13:00', title: 'Tanya Jawab & Penutupan' }
-      ],
+      agenda: (backendEvent.agenda && Array.isArray(backendEvent.agenda) && backendEvent.agenda.length > 0)
+        ? backendEvent.agenda
+        : [
+            { time: '08:00', title: 'Registrasi Peserta' },
+            { time: '09:00', title: 'Sesi Utama' },
+            { time: '12:00', title: 'Makan Siang' },
+            { time: '13:00', title: 'Tanya Jawab & Penutupan' }
+          ],
       facilities: ['Sertifikat Resmi', 'Materi Kegiatan', 'Konsumsi', 'Networking'],
       speakers: [{ name: 'INKINDO Jatim', role: 'Penyelenggara' }],
       address: backendEvent.location || 'Gedung INKINDO Jatim',
       sponsors: ['INKINDO Jawa Timur'],
       gallery: [
         'https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=300&q=80'
-      ]
+      ],
+      poster_file_path: backendEvent.poster_file || ''
     };
   };
 
@@ -168,14 +174,23 @@ const KatalogEvent = () => {
   const isInternalEvent = (ev) => ev?.type?.toLowerCase() === 'internal';
 
   const openRegisterModal = () => {
+    const token = localStorage.getItem('authToken');
+    if (!token) {
+      alert("Anda harus masuk/login terlebih dahulu untuk mendaftar event.");
+      return;
+    }
+
+    const authUserStr = localStorage.getItem('authUser');
+    const authUser = authUserStr ? JSON.parse(authUserStr) : null;
+
     setIsModalOpen(false);
     setIsRegisterOpen(true);
     setIsSuccessOpen(false);
     setRegisterForm({
-      name: '',
-      email: '',
-      whatsapp: '',
-      kta: '',
+      name: authUser?.name || '',
+      email: authUser?.email || '',
+      whatsapp: authUser?.phone || '',
+      kta: authUser?.nta || '',
       proof: null,
     });
     setRegisterErrors({});
@@ -272,6 +287,7 @@ const KatalogEvent = () => {
         });
 
         if (response.data.success) {
+          setRegStatus(response.data.data.status || 'verified');
           setIsRegisterOpen(false);
           setIsSuccessOpen(true);
         } else {
@@ -596,6 +612,30 @@ const KatalogEvent = () => {
                   <p className="ev-address">{currentEvent.address || '-'}</p>
                 </div>
 
+                {currentEvent.poster_file_path && (
+                  <div className="ev-sidebar-card">
+                    <div className="ev-sidebar-title" style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                      <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="#1565d8" strokeWidth="2.2">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                        <path d="M14 2v6h6" />
+                      </svg>
+                      Dokumen Poster Detail
+                    </div>
+                    <p style={{ fontSize: '12px', color: '#64748b', margin: '8px 0 12px', lineHeight: 1.5 }}>
+                      Buka dokumen atau unduh poster untuk rincian kegiatan lengkap.
+                    </p>
+                    <a 
+                      href={`${API_BASE_URL.replace(/\/api$/, '')}/storage/${currentEvent.poster_file_path}`} 
+                      target="_blank" 
+                      rel="noreferrer" 
+                      className="ev-card-btn" 
+                      style={{ display: 'inline-flex', width: '100%', justifyContent: 'center', padding: '10px', textDecoration: 'none', background: '#eff6ff', color: '#1565d8', border: '1px solid #dbeafe', borderRadius: '8px', fontSize: '13px', fontWeight: 700 }}
+                    >
+                      Buka / Unduh Poster
+                    </a>
+                  </div>
+                )}
+
                 <div className="ev-sidebar-card">
                   <div className="ev-sidebar-title">Sponsored by:</div>
                   <div className="ev-sponsor-row">
@@ -636,39 +676,12 @@ const KatalogEvent = () => {
               </div>
             </div>
 
-            <div className="reg-section">
-              <div className="reg-section-title">DATA DIRI IDENTITAS</div>
-              <div className="reg-field">
-                <label>Nama Lengkap</label>
-                <input
-                  type="text"
-                  value={registerForm.name}
-                  onChange={(e) => setRegisterForm({ ...registerForm, name: e.target.value })}
-                  placeholder="John Doe"
-                />
-                {registerErrors.name && <span className="reg-error">{registerErrors.name}</span>}
-              </div>
-              <div className="reg-row">
-                <div className="reg-field">
-                  <label>Email</label>
-                  <input
-                    type="email"
-                    value={registerForm.email}
-                    onChange={(e) => setRegisterForm({ ...registerForm, email: e.target.value })}
-                    placeholder="john@example.com"
-                  />
-                  {registerErrors.email && <span className="reg-error">{registerErrors.email}</span>}
-                </div>
-                <div className="reg-field">
-                  <label>No. Whatsapp</label>
-                  <input
-                    type="tel"
-                    value={registerForm.whatsapp}
-                    onChange={(e) => setRegisterForm({ ...registerForm, whatsapp: e.target.value })}
-                    placeholder="08xx-xxxx-xxx"
-                  />
-                  {registerErrors.whatsapp && <span className="reg-error">{registerErrors.whatsapp}</span>}
-                </div>
+            <div className="reg-section" style={{ background: '#f8fafc', padding: '16px', borderRadius: '12px', border: '1px solid #e2e8f0', margin: '0 20px 16px' }}>
+              <div className="reg-section-title" style={{ fontSize: '11px', color: '#64748b', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>Profil Pendaftar</div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '14px', color: '#1e293b' }}>
+                <div><strong>Nama:</strong> {registerForm.name}</div>
+                <div><strong>Email:</strong> {registerForm.email}</div>
+                <div><strong>WhatsApp:</strong> {registerForm.whatsapp}</div>
               </div>
             </div>
 
@@ -724,9 +737,19 @@ const KatalogEvent = () => {
       {isSuccessOpen && (
         <div id="successModal" className="reg-overlay" onClick={(e) => closeSuccessModal(e, false)}>
           <div className="reg-success-box">
-            <div className="reg-success-icon">&#10004;</div>
-            <h3 className="reg-success-title">Pendaftaran Sukses!</h3>
-            <p className="reg-success-copy">E-Tiket telah aktif. Detail kegiatan telah kami kirimkan salinannya melalui email Anda.</p>
+            {regStatus === 'verified' ? (
+              <>
+                <div className="reg-success-icon">&#10004;</div>
+                <h3 className="reg-success-title">Pendaftaran Sukses!</h3>
+                <p className="reg-success-copy">E-Tiket telah aktif. Detail kegiatan telah kami kirimkan salinannya melalui email Anda.</p>
+              </>
+            ) : (
+              <>
+                <div className="reg-success-icon" style={{ background: '#fef3c7', color: '#d97706', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>⏱</div>
+                <h3 className="reg-success-title" style={{ color: '#d97706' }}>Menunggu Verifikasi!</h3>
+                <p className="reg-success-copy">Pendaftaran berhasil diajukan dengan status <strong>Pending</strong>. Silakan tunggu Admin memverifikasi bukti pembayaran Anda untuk mengaktifkan tiket.</p>
+              </>
+            )}
             <button className="reg-submit" onClick={() => closeSuccessModal(null, true)}>Tutup &amp; Lihat Jadwal</button>
           </div>
         </div>
